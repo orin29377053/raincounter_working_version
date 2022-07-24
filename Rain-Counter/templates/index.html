@@ -1,0 +1,58 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  {% include 'static.html' %}
+
+  <title>Rain Counter</title>
+
+
+  <style>
+    /* .go_to_page {
+      background-color: rgb(207 231 252);
+      border-radius: 6px;
+      font-size: large;
+      border: #729fc6 1px solid;
+      padding: 13px 22px;
+      font-weight: 500;
+    }
+
+    .go_to_page:hover {
+      background-color: #729fc6;
+      color: white;
+    } */
+  </style>
+
+
+</head>
+
+<body>
+  {% include 'header.html' %}
+  <div class="main-content">
+    <div class="container-fluid full">
+      <div class="row notshow">
+        <div class="col-12 my-4 text-center">
+          <button type="button" class="go_to_page" onclick="window.location.href='heatmap1';">即時降雨資訊</button>
+        </div>
+        <div class="col-12 my-4 text-center">
+          <button type="button" class="go_to_page" onclick="window.location.href='equipment';">設備列表</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include 'footer.html' %}
+
+
+  <script>
+
+
+
+  </script>
+</body>
+
+</html>

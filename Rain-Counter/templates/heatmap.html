@@ -1,0 +1,69 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% include 'static.html' %}
+    <link type="text/css" rel="stylesheet" href="./static/css/idw-controls.css" />
+    <script src="./static/js/leaflet-idw.js"></script>
+    <script src="./static/js/idw-legend.js"></script>
+    <script src="./static/js/idw-logo.js"></script>
+    <!-- <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script> -->
+    <script src="./static/js/idw-display.js"></script>
+    <script src="./static/js/leaflet-idwMarker.js"></script>
+    <title>Rain Counter</title>
+
+
+    <!-- <script src="https://unpkg.com/leaflet"></script> -->
+    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/leaflet-easyprint@2.1.9/dist/bundle.min.js"></script> -->
+
+
+</head>
+
+<body>
+    {% include 'header.html' %}
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="row p-1">
+                <div class="col-lg-4 col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>即時降雨量熱圖顯示</h4>
+                            <div>
+                                <p>資料時間：<span id="data_time"></span></p>
+                                <p>資料來源：中央氣象局</p>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary" id="update_data">更新氣象局資訊</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8 col-12">
+                    <div class="badge-notice my-2">
+                        <strong>ULTRON Station</strong>
+                        <span style="background-color:	#2AAD27">運作中、未註冊</span>
+                        <span style="background-color:	#9C2BCB">設備異常</span>
+                        <span style="background-color:	#CB8427">低電量</span>
+                        <span style="background-color:	#CB2B3E">停用</span>
+                    </div>
+                    <div id="heatmap" style="width: 100%; height: 85vh;"></div>
+                    <!-- <div id="map" style="width: 100%; height: 90vh;"></div> -->
+                </div>
+                <!-- <div class="col-12">
+                    <div id="heatmap1" style="width: 100%; height: 90vh;"></div>
+                </div> -->
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+
+    <!-- <script src="./static/js/idw-main copy.js"></script> -->
+    <script src="./static/js/heatmap.js/?v=20220606"></script>
+
+</body>
+
+</html>

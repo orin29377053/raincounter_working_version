@@ -1,0 +1,737 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% include 'static.html' %}
+
+    <title>Rain Counter</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* .detail-info {
+            border: grey 1px solid;
+        } */
+
+        #instrumentList tr,
+        #instrumentList td {
+            padding: 3px;
+        }
+
+        .status_error {
+            color: red;
+        }
+
+        .status_unregister {
+            color: #259b33;
+        }
+
+        .status_low {
+            color: #ff911a;
+        }
+
+        .status_deactivate {
+            color: #ec1c8b;
+
+        }
+
+        .clickRow {
+            background-color: #e1f4ff;
+        }
+
+        .seperate {
+            border-right: #b7b7b7 1px dashed;
+            border-bottom: #b7b7b7 1px dashed;
+        }
+
+        li {
+            list-style: none;
+            line-height: 2;
+            color: black;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    {% include 'header.html' %}
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="row mx-2">
+                <div class="col-12">
+                    <h5 class="pt-2"><i class="fa-solid fa-grip-lines-vertical"></i>&ensp;設備列表與資訊 </h5>
+                </div>
+            </div>
+            <div class="row mx-2 zoom_for_desktop">
+                <div class="col-12 my-1">
+                    <table id="instrumentList" class='table-hover table-bordered'></table>
+                </div>
+            </div>
+            <hr class="mx-4 my-2" />
+            <div class="row mx-2">
+                <div class="col-12 p-0" id="detail_info" style="display: none;">
+                    <div class="row mx-2 detail-info">
+                        <div class="col-lg-4 col-12 seperate p-0 zoom_for_desktop">
+                            <h5><i class="fa-solid fa-grip-lines-vertical"></i>&ensp;設備詳細資訊</h5>
+                            <ul class="p-2 mb-0">
+                                <li>設備序號：<span data-eq="device"></span></li>
+                                <li>設備名稱：<span data-eq="name"></span></li>
+                                <li>計畫名稱：<span data-eq="project"></span></li>
+                                <li>設備狀態：<span data-eq="status"></span></li>
+                                <li>上傳頻率：<span data-eq="upload_mode"></span> 分</li>
+                                <li>電量：<span data-eq="voltage"></span></li>
+                                <li>設備位置：<span data-eq="place"></span></li>
+                                <li>上次更新時間：<span data-eq="last_update"></span></li>
+                                <li>註冊儀器者：<span data-eq="register_admin"></span></li>
+                            </ul>
+                            <h5><i class="fa-solid fa-grip-lines-vertical"></i>&ensp;監測雨量資料</h5>
+                            <ul class="p-2 mb-0">
+                                <li>10分鐘累積雨量：<span data-eq="10min"></span> mm</li>
+                                <li>60分鐘累積雨量：<span data-eq="60min"></span> mm</li>
+                                <li>3小時累積雨量：<span data-eq="3h"></span> mm</li>
+                                <li>6小時累積雨量：<span data-eq="6h"></span> mm</li>
+                                <li>12小時累積雨量：<span data-eq="12h"></span> mm</li>
+                                <li>24小時累積雨量：<span data-eq="24h"></span> mm</li>
+                                <li>本日累積雨量：<span data-eq="today"></span> mm</li>
+                                <li>48小時累積雨量：<span data-eq="48h"></span> mm</li>
+                                <li>72小時累積雨量：<span data-eq="72h"></span> mm</li>
+                            </ul>
+                            <div id="eq_place" style="width:90%;height: 250px;" class="my-2">
+
+                            </div>
+                        </div>
+                        <div class="col-lg-8 col-12 no_padding">
+                            <div class="row mb-4 mt-2 zoom_for_desktop">
+                                <h5 class="col-12"><i class="fa-solid fa-grip-lines-vertical"></i>&ensp;雨量詳細數據</h5>
+
+                                <div class="col-lg-2 col-md-3 col-sm-3 col-4 text-right" style=" line-height: 2;">
+                                    <p class="form-control mb-2" style="border:none;">開始時間</p>
+                                    <p class="form-control my-0" style="border:none;">結束時間</p>
+                                </div>
+                                <div class="col-lg-4 col-md-4 col-sm-9 col-8 mb-3">
+                                    <input type="datetime-local" class="form-control mb-2" data-search="start_time">
+                                    <input type="datetime-local" class="form-control" data-search="end_time">
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <button type="button" class="btn btn-info " style="width: 100%;"
+                                        id="period_search">搜尋</button>
+                                </div>
+
+                                <div class="col-md-2 col-6">
+                                    <button type="button" class="btn btn-info " style="width: 100%;"
+                                        id="period_download">匯出 .csv</button>
+                                </div>
+                            </div>
+                            <div class="chart-area mr-2">
+                                <canvas id="rainChart" class="cvas"></canvas>
+                            </div>
+                            <hr />
+                            <div class="chart-area mr-2">
+                                <canvas id="tempVoltgeChart" class="cvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="modifyEq" tabindex="-1" aria-labelledby="modifyEqLabel" aria-hidden="true"
+                data-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modifyEqLabel">更新設備資訊</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row form-group pl-1 pr-3 mb-2">
+                                <label class="col-form-label col-md-2 col-4">設備序號</label>
+                                <input type="text" class="form-control col-md-4 col-6 " data-eqmodify="device" disabled>
+
+                            </div>
+                            <div class="row form-group pl-1 pr-3 mb-2">
+                                <label class="col-form-label col-md-2 col-4">設備名稱</label>
+                                <input type="text" class="form-control col-md-4 col-6 mb-2" data-eqmodify="name">
+                                <label class="col-form-label col-md-2 col-4">計畫名稱</label>
+                                <input type="text" class="form-control col-md-4 col-6 mb-2" data-eqmodify="project">
+
+                            </div>
+                            <div class="row form-group pl-1 pr-3 mb-2">
+                                <label class="col-form-label col-md-2 col-4">上傳頻率</label>
+                                <select class="form-control col-md-4 col-6 mb-2" data-eqmodify="upload_mode">
+                                    <option value="1">1</option>
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="60">60</option>
+
+                                </select>
+                                <label class="col-form-label col-md-2 col-4">註冊人</label>
+                                <input type="text" class="form-control col-md-4 col-6 mb-2"
+                                    data-eqmodify="register_admin">
+                            </div>
+                            <div class="row form-group pl-1 pr-3 mb-2">
+                                <label class="col-form-label col-md-2 col-4">備註</label>
+                                <input type="text" class="form-control col-md-4 col-6 mb-2" data-eqmodify="remark">
+                            </div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" id="update_eq">更新</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+
+
+
+
+    <script>
+
+        function crtTimeFtt(value, row) {
+            if (value != null) {
+                let date = new Date(value);
+                date.setHours(date.getHours() + 8);
+                return date.getFullYear() + '-' + add0(date.getMonth() + 1) + '-' + add0(date.getDate()) + ' ' + add0(date.getHours()) + ':' + add0(date.getMinutes()) + ':' + add0(date.getSeconds());
+            }
+        }
+        function add0(Completion) {
+            return Completion < 10 ? "0" + Completion : Completion;
+        }
+
+        function get_equipment(params) {
+            $.get('api/get_raincounter_eq/').then(function (res) {
+                params.success(res)
+            })
+        }
+
+
+        $(document).ready(() => {
+            $('#instrumentList').bootstrapTable({
+                classes: 'table',
+                // ajax: "get_equipment",
+                url: 'api/get_raincounter_eq/',
+                pageSize: 5,
+                uniqueId: "ID",
+                pagination: true,
+                filterControl: true,
+                pageList: [5, 10, 30, 50, 100],
+                onClickRow: getDetail,
+                columns: [
+                    {
+                        field: 'modify',
+                        title: '修改',
+                        formatter: (val) => { return '<i class="fa-solid fa-pen-to-square"></i> 修改' },
+                        cellStyle: { css: { 'cursor': 'pointer', 'white-space': 'nowrap' } },
+                    },
+                    {
+                        field: 'device',
+                        title: '設備序號',
+                        sortable: true,
+                        filterControl: 'input',
+                    },
+                    {
+                        field: 'name',
+                        title: '設備名稱',
+                        sortable: true,
+                        filterControl: 'input',
+                        formatter: (val) => val != -1 ? val : "-"
+                    },
+                    {
+                        field: 'project',
+                        title: '計畫名稱',
+                        sortable: true,
+                        filterControl: 'input',
+                        formatter: (val) => val != -1 ? val : "-"
+                    },
+                    {
+                        field: 'status',
+                        title: '設備狀態',
+                        sortable: true,
+                        filterControl: 'select',
+                        // formatter: statusField,
+                        formatter: (val) => {
+                            switch (val) {
+                                case "working":
+                                    return "運作中"
+                                    break;
+                                case "error":
+                                    return "設備異常"
+                                    break;
+                                case "low_power":
+                                    return "低電量"
+                                    break;
+                                case "unregister":
+                                    return "未註冊"
+                                    break;
+                                case "deactivate":
+                                    return "停用"
+                                    break;
+                                default:
+                                    return val
+                                    break;
+                            }
+                        },
+                        cellStyle: (val, row, ind) => {
+                            return {
+                                classes: val.trim() === 'error' ? 'status_error' :
+                                    val.trim() === 'low_power' ? 'status_low' :
+                                        val.trim() === 'unregister' ? 'status_unregister' :
+                                            val.trim() === 'deactivate' ? 'status_deactivate' : ""
+                            }
+                        }
+                    },
+                    {
+                        field: 'upload_mode',
+                        title: '上傳頻率',
+                        sortable: true,
+                        formatter: (val) => { return `${val} 分` },
+                    },
+                    {
+                        field: 'voltage',
+                        title: '電量(％)',
+                        sortable: true,
+                        formatter: (val) => {
+                            // 滿電為12.4V 沒電為10V                 
+                            let charge = (val - 10) * 100 / (12.4 - 10)
+                            charge > 100 && (charge = 100)
+                            return charge.toFixed(1) + " %"
+                        },
+                    },
+                    {
+                        field: 'remark',
+                        title: '備註',
+                        sortable: true,
+                    },
+                    {
+                        field: 'last_update',
+                        title: '上次更新時間',
+                        sortable: true,
+                        formatter: crtTimeFtt,
+                    },
+                ]
+            })
+            // draw(dd_data)
+
+        })
+        let map = L.map("eq_place").setView([25.0302, 121.6551], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 14,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        let thisMarker
+
+        function getDetail(row, $element, field) {
+
+            // console.log(row)
+            if (field == "modify") {
+                $("[data-eqmodify]").each((ind, ele) => {
+                    let ddd = $(ele).data('eqmodify')
+                    $(ele).val(row[ddd] != -1 ? row[ddd] : "")
+                })
+                $('#modifyEq').modal('show')
+                $('#update_eq').off().on('click', () => {
+                    let change = false
+                    let update_data = {}
+                    $("[data-eqmodify]").each((ind, ele) => {
+                        let ddd = $(ele).data('eqmodify')
+                        if (ddd == 'device') { return }
+                        if ($(ele).val() != row[ddd]) {
+                            update_data[ddd] = $(ele).val()
+                            change = true
+                        }
+                    })
+                    update_data['id'] = row.id
+
+                    if (!change) {
+                        Swal.fire("你沒有修改任何資料。")
+                    } else {
+                        Swal.fire({
+                            title: '請輸入修改密碼',
+                            icon: 'warning',
+                            input: 'password',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                update_data.verify = result.value
+                                $.ajax({
+                                    type: "POST",
+                                    url: "/api/revise_eq_info/",
+                                    data: update_data,
+                                    datatype: "json",
+                                    success: function (response) {
+                                        $('#modifyEq').modal('hide')
+                                        let res = ""
+                                        if (response == "success") {
+                                            $('#instrumentList').bootstrapTable('refresh')
+                                            Swal.fire({
+                                                icon: 'success',
+                                                title: '修改成功',
+                                                showConfirmButton: false,
+                                                timer: 2000
+                                            })
+                                        } else {
+                                            if (response == "verify error") {
+                                                res = "密碼錯誤"
+                                            } else {
+                                                res = "請聯絡開發人員"
+                                            }
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: res,
+                                            })
+                                        }
+                                    }, error: function (response) {
+                                        console.log(response)
+                                    }
+                                })
+
+                            }
+                        })
+                    }
+
+                })
+            } else {
+                $($element).siblings().removeClass('clickRow');
+                $($element).addClass('clickRow');
+                $("[data-eq]").each((ind, ele) => {
+                    let eq_info = $(ele).data("eq")
+                    switch (eq_info) {
+                        case "place":
+                            let x = row.x.toFixed(3)
+                            let y = row.y.toFixed(3)
+                            $(ele).empty().append(`[ ${x} , ${y} ]`)
+                            break;
+                        case "last_update":
+                            $(ele).empty().append(crtTimeFtt(row[eq_info]))
+                            break;
+                        case "voltage":
+                            let charge = (row[eq_info] - 10) * 100 / (12.4 - 10)
+                            charge > 100 && (charge = 100)
+                            charge < 0 && (charge = 0)
+                            // return charge.toFixed(1) + " %"
+                            $(ele).empty().append(row[eq_info] == -1 ? "-" : charge.toFixed(1) + " %")
+                            break;
+                        case "status":
+                            let sta = ""
+                            switch (row.status) {
+                                case "working":
+                                    sta = "運作中"
+                                    break;
+                                case "error":
+                                    sta = "設備異常"
+                                    break;
+                                case "low_power":
+                                    sta = "低電量"
+                                    break;
+                                case "unregister":
+                                    sta = "未註冊"
+                                    break;
+                                case "deactivate":
+                                    sta = "停用"
+                                    break;
+                                default:
+                                    sta = "-"
+                                    break;
+                            }
+                            $(ele).empty().append(sta)
+                            break;
+                        // case "upload_mode":
+                        //     $(ele).empty().append(row[eq_info] == -1 ? "-" : row[eq_info] + " 分")
+                        //     break;
+                        default:
+                            $(ele).empty().append(row[eq_info] == -1 ? "-" : row[eq_info])
+                            break;
+                    }
+
+                });
+                //map
+                (thisMarker) && map.removeLayer(thisMarker);
+                map.panTo([row.y, row.x])
+                thisMarker = L.marker([row.y.toFixed(4), row.x.toFixed(4)]).bindPopup(row.name).addTo(map);
+                setTimeout(function () { map.invalidateSize() }, 500);
+
+
+                api_get_detail(row.device)
+                $("#detail_info").show()
+                $("#period_search").off().on('click', () => {
+                    let st = $("[data-search=start_time]").val().replace("T", " ")
+                    let ed = $("[data-search=end_time]").val().replace("T", " ")
+                    st.length != 19 && (st = st + ":00")
+                    ed.length != 19 && (ed = ed + ":00")
+
+                    api_get_detail(row.device, st, ed)
+                })
+                $("#period_download").off().on("click", () => {
+                    let st = $("[data-search=start_time]").val().replace("T", " ")
+                    let ed = $("[data-search=end_time]").val().replace("T", " ")
+                    st.length != 19 && (st = st + ":00")
+                    ed.length != 19 && (ed = ed + ":00")
+
+                    Swal.fire({
+                        title: '下載此區間雨量資料？',
+                        html: st + " - " + "</br>" + ed,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: '下載',
+                        cancelButtonText: '取消',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = `/api/get_rain_data_download/?name=${row.device}&start_time=${st}&end_time=${ed}`
+                        }
+                    })
+                })
+            }
+        }
+
+
+        function api_get_detail(name, start, end) {
+            let ddata = { "name": name }
+            start && (ddata['start_time'] = start);
+            end && (ddata['end_time'] = end);
+
+            $.ajax({
+                type: "GET",
+                url: "/api/get_rain_data/",
+                data: ddata,
+                success: function (response) {
+                    if (response != "error!!!") {
+                        updateChart(response)
+                        $("[data-search=start_time]").val(response[0].time)
+                        $("[data-search=end_time]").val(response[response.length - 1].time)
+                    } else {
+                        updateChart([])
+                        $("[data-search]").val("")
+                        Swal.fire('設備異常或資料異常')
+                    }
+                }, error: function (response) {
+                    console.log(response)
+                }
+            })
+        }
+
+        const average = (val, front, back, ind) => {
+            if (val == -333) {
+                return [((front + back) / 2), ind]
+            } else {
+                return [val]
+            }
+        }
+
+        const dateToHour = (value) => {
+            if (value != null) {
+                let date = new Date(value);
+                // date.setHours(date.getHours() + 8);
+                return date.getFullYear() + '-' + add0(date.getMonth() + 1) + '-' + add0(date.getDate()) + ' ' + add0(date.getHours()) + ':' + add0(date.getMinutes());
+            }
+        }
+
+        function classifyData(data) {
+            let time = [], rainfall = [], voltage = [], temp = [], accu_rainfall = []
+            let wrong = {
+                "rainfall": [],
+                "voltage": [],
+                "temp": [],
+                "accu_rainfall": []
+            }
+            let word = ["rainfall", "voltage", "temp", "accu_rainfall"]
+            let set = [rainfall, voltage, temp, accu_rainfall]
+            $(data).each((ind, ele) => {
+                time.push(dateToHour(ele.time))
+                $(word).each((ind0, ele0) => {
+                    if (ele0 == "accu_rainfall") {
+                        let acc = ele["rainfall"]
+                        acc == -333 && (acc = 0)
+                        ind === 0 ? accu_rainfall.push(acc) : accu_rainfall.push(accu_rainfall[ind - 1] + acc)
+                    } else if (ele0 == "voltage") {
+                        let charge = (ele[ele0] - 10) * 100 / (12.4 - 10)
+                        charge > 100 && (charge = 100)
+                        charge < 0 && (charge = 0)
+                        set[ind0].push(ele[ele0] == -333 ? null : charge)
+                    } else {
+                        let d_data = ele[ele0]
+                        d_data == -333 && (d_data = null)
+                        set[ind0].push(d_data)
+                    }
+                })
+            })
+            return { "time": time, "rainfall": rainfall, "voltage": voltage, "temp": temp, "accu_rainfall": accu_rainfall, "wrong": wrong }
+        }
+
+        function updateChart(input_data) {
+            let data_for_chart = classifyData(input_data)
+
+            tempVoltgeChart.data.datasets[0].data = data_for_chart.voltage
+            tempVoltgeChart.data.datasets[1].data = data_for_chart.temp
+            tempVoltgeChart.data.labels = data_for_chart.time
+
+            rainChart.data.datasets[0].data = data_for_chart.rainfall
+            rainChart.data.datasets[1].data = data_for_chart.accu_rainfall
+            rainChart.data.labels = data_for_chart.time
+
+            tempVoltgeChart.update()
+            rainChart.update()
+
+
+            // var a = document.createElement('a');
+            // a.href = tempVoltgeChart.toBase64Image();
+            // a.download = 'my_file_name.png';
+            // // Trigger the download
+            // a.click();      
+
+        }
+
+        let tempVolData = {
+            labels: [],
+            datasets: [{
+                label: '電量 (%)',
+                backgroundColor: '#e1802e',
+                borderColor: '#e1802e',
+                data: [],
+                spanGaps: true,
+                yAxisID: 'y',
+            }, {
+                label: '溫度 (°C)',
+                backgroundColor: '#2b95b9',
+                borderColor: '#2b95b9',
+                data: [],
+                spanGaps: true,
+                yAxisID: 'y1',
+            }]
+        };
+
+        let tempConfig = {
+            type: 'line',
+            data: tempVolData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '設備電量 / 環境溫度圖',
+                        font: { size: 16 },
+                        align: "center",
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            text: "電量 (%)",
+                            display: true,
+                            font: { size: 14 },
+                        },
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            text: "溫度 (°C)",
+                            display: true,
+                            font: { size: 14 },
+                        },
+
+                        // grid line settings
+                        grid: {
+                            drawOnChartArea: false, // only want the grid lines for one axis to show up
+                        },
+                    },
+                }
+            }
+        };
+        let tempVoltgeChart = new Chart(document.getElementById('tempVoltgeChart'), tempConfig);
+
+        let rainData = {
+            labels: [],
+            datasets: [{
+                label: '時雨量 (mm)',
+                backgroundColor: '#83b4e6',
+                borderColor: '#83b4e6',
+                data: [],
+                spanGaps: true,
+                yAxisID: 'yr',
+                order: 1
+            }, {
+                label: '累積雨量 (mm)',
+                backgroundColor: '#7a6e6e',
+                borderColor: '#7a6e6e',
+                data: [],
+                spanGaps: true,
+                type: 'line',
+                order: 0,
+                yAxisID: 'yaccr',
+            }]
+        };
+        let rainConfig = {
+            type: 'bar',
+            data: rainData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '時雨量 / 累積雨量圖',
+                        font: { size: 16 },
+                        align: "center",
+                    }
+                },
+
+                scales: {
+                    yr: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            text: "時雨量 (mm)",
+                            display: true,
+                            font: { size: 14 },
+                        },
+                    },
+                    yaccr: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            text: "累積雨量 (mm)",
+                            display: true,
+                            font: { size: 14 },
+                        },
+
+                        // grid line settings
+                        grid: {
+                            drawOnChartArea: false, // only want the grid lines for one axis to show up
+                        },
+                    },
+                }
+            },
+        };
+        let rainChart = new Chart(document.getElementById('rainChart'), rainConfig);
+
+
+
+
+    </script>
+</body>
+
+</html>
